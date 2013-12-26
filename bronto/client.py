@@ -19,6 +19,7 @@ class Client(object):
 
         self._endpoint = endpoint
         self._token = token
+        self.client = None
 
     def login(self):
         self.client = SudsClient(self._endpoint)
@@ -58,3 +59,21 @@ class Client(object):
 
     def add_contact(self, contact):
         return self.add_contacts([contact, ])
+
+    def get_contact(self, email):
+        contact_email = self.client.factory.create('stringValue')
+        filter_operator = self.client.factory.create('filterOperator')
+        contact_email.operator = filter_operator.equalTo
+        contact_email.value = email
+
+        contact_filter = self.client.factory.create('contactFilter')
+        contact_filter.email = contact_email
+        filter_type = self.client.factory.create('filterType')
+        contact_filter.type = filter_type.AND
+
+        try:
+            response = self.client.service.readContacts(contact_filter,
+                                                        pageNumber=1)
+        except WebFault as e:
+            raise BrontoError(e.message)
+        return response
