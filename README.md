@@ -14,9 +14,19 @@ client = Client('https://api.bronto.com/v4?wsdl', 'BRONTO_API_TOKEN')
 
 Simple as that!
 
-Addind a Contact
+Adding a Contact
 ----------------
 ```python
 contact_data = {'email': 'me@domain.com', ...}
 client.add_contact(contact_data)
 ```
+
+Retrieving a contact
+--------------------
+```python
+client.get_contact('me@domain.com')
+```
+
+**NOTE:** This client is not built with long-running processes in mind. The
+Bronto API connection will time out after 20 minutes of inactivity, and this
+client does NOT handle those timeouts.
