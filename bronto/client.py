@@ -63,7 +63,7 @@ class Client(object):
     def get_contact(self, email):
         contact_email = self.client.factory.create('stringValue')
         filter_operator = self.client.factory.create('filterOperator')
-        contact_email.operator = filter_operator.equalTo
+        contact_email.operator = filter_operator.EqualTo
         contact_email.value = email
 
         contact_filter = self.client.factory.create('contactFilter')
