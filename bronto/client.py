@@ -12,6 +12,10 @@ class Client(object):
     _valid_contact_fields = ['email', 'mobileNumber', 'status', 'msgPref',
                              'source', 'customSource', 'listIds', 'fields',
                              'SMSKeywordIDs']
+    _valid_order_fields = ['id', 'email', 'contactId', 'products', 'orderDate',
+                           'tid']
+    _valid_product_fields = ['id', 'sku', 'name', 'description', 'category',
+                             'image', 'url', 'quantity', 'price']
 
     def __init__(self, token, **kwargs):
         if not token or not isinstance(token, basestring):
@@ -83,3 +87,41 @@ class Client(object):
 
     def get_contact(self, email):
         return self.get_contacts([email, ])
+
+    def add_orders(self, orders):
+        final_orders = []
+        for order in orders:
+            if not order.get('id', None):
+                raise ValueError('Each order must provide an id')
+            order_obj = self._client.factory.create('orderObject')
+            for field, value in order:
+                if field == 'products':
+                    final_products = []
+                    for product in value:
+                        product_obj = self._client.factory.create('productObject')
+                        for pfield, pvalue in product:
+                            if pfield not in self._valid_product_fields:
+                                raise KeyError('Invalid product attribute: %s'
+                                               % pfield)
+                            setattr(product_obj, pfield, pvalue)
+                        final_products.append(product_obj)
+                    order_obj.products = final_products
+                elif field not in self._valid_order_fields:
+                    raise KeyError('Invalid order attribute: %s' % field)
+                else:
+                    setattr(order_obj, field, value)
+            final_orders.append(order_obj)
+        try:
+            response = self._client.service.addOrUpdateOrders(orders)
+            if response.errors:
+                err_str = ', '.join(['%s: %s' % (response.results[x].errorCode,
+                                                 response.results[x].errorString)
+                                     for x in response.errors])
+                raise BrontoError('An error occurred while adding orders: %s'
+                                  % err_str)
+        except WebFault as e:
+            raise BrontoError(e.message)
+        return response
+
+    def add_order(self, order):
+        return self.add_orders([order, ])
