@@ -37,8 +37,6 @@ class Client(object):
     def add_contacts(self, contacts):
         final_contacts = []
         for contact in contacts:
-            if not isinstance(contact, dict):
-                raise ValueError('Each contact must be a dictionary of contact attributes')
             if not any([contact.get('email'), contact.get('mobileNumber')]):
                 raise ValueError('Must provide either an email or mobileNumber')
             contact_obj = self._client.factory.create('contactObject')
