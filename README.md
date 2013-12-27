@@ -9,7 +9,8 @@ Getting Started
 ```python
 from bronto.client import Client
 
-client = Client('https://api.bronto.com/v4?wsdl', 'BRONTO_API_TOKEN')
+client = Client('BRONTO_API_TOKEN')
+client.login()
 ```
 
 Simple as that!
