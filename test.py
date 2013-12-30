@@ -1,5 +1,6 @@
 import os
 import unittest
+import uuid
 
 from bronto import client
 
@@ -34,7 +35,39 @@ class BrontoContactTest(BrontoTest):
 
 
 class BrontoOrderTest(BrontoTest):
-    pass
+    products = [
+        {'id': 1,
+         'sku': '1111',
+         'name': 'Test Product 1',
+         'description': 'This is our first test product.',
+         'quantity': 1,
+         'price': 3.50},
+        {'id': 2,
+         'sku': '2222',
+         'name': 'Second Test Product',
+         'description': 'Here we have another product for testing.',
+         'quantity': 12,
+         'price': 42.00}
+    ]
+
+    def setUp(self):
+        super(BrontoOrderTest, self).setUp()
+        contact = self._client.get_contact(self.contact_info['email'])
+        self._order_id = uuid.uuid4().hex
+        order_info = {'id': self._order_id,
+                      'email': contact.email,
+                      'contactId': contact.id,
+                      'products': self.products}
+        order = self._client.add_order(order_info)
+        self.assertIs(order.isError, False)
+
+    def tearDown(self):
+        super(BrontoOrderTest, self).tearDown()
+        response = self._client.delete_order(self._order_id)
+        self.assertIs(response.isError, False)
+
+    def test_dummy(self):
+        pass  # This is just to ensure that setUp/tearDown work
 
 
 if __name__ == '__main__':
