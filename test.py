@@ -5,7 +5,9 @@ from bronto import client
 
 
 class BrontoTest(unittest.TestCase):
-    contact_info = {'email': 'joey@scottsmarketplace.com'}
+    contact_info = {'email': 'joey@scottsmarketplace.com',
+                    'source': 'api',
+                    'customSource': 'Python client test suite'}
 
     @classmethod
     def setUpClass(cls):
@@ -27,7 +29,13 @@ class BrontoContactTest(BrontoTest):
 
     def test_get_contact(self):
         contact = self._client.get_contact(self.contact_info['email'])
-        self.assertEqual(contact.email, self.contact_info['email'])
+        for key, val in self.contact_info.iteritems():
+            self.assertEqual(getattr(contact, key), val)
+
+
+class BrontoOrderTest(BrontoTest):
+    pass
+
 
 if __name__ == '__main__':
     unittest.main()
