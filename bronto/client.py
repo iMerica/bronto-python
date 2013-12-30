@@ -147,4 +147,37 @@ class Client(object):
         return response
 
     def add_order(self, order):
-        return self.add_orders([order, ])
+        order = self.add_orders([order, ])
+        try:
+            return order.results[0]
+        except:
+            return order.results
+
+    def get_orders(self, order_ids):
+        pass
+
+    def get_order(self, order_id):
+        order = self.get_orders([order_id, ])
+        try:
+            return order[0]
+        except:
+            return order
+
+    def delete_orders(self, order_ids):
+        orders = []
+        for order_id in order_ids:
+            order = self._client.factory.create('orderObject')
+            order.id = order_id
+            orders.append(order)
+        try:
+            response = self._client.service.deleteOrders(orders)
+        except WebFault as e:
+            raise BrontoError(e.message)
+        return response
+
+    def delete_order(self, order_id):
+        response = self.delete_orders([order_id, ])
+        try:
+            return response.results[0]
+        except:
+            return response.results
