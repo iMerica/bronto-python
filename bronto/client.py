@@ -41,14 +41,14 @@ class Client(object):
                 raise ValueError('Must provide either an email or mobileNumber')
             contact_obj = self._client.factory.create('contactObject')
             # FIXME: Add special handling for listIds, fields and SMSKeywordIDs
-            for field, value in contact:
+            for field, value in contact.iteritems():
                 if field not in self._valid_contact_fields:
                     raise KeyError('Invalid contact attribute: %s' % field)
                 setattr(contact_obj, field, value)
             final_contacts.append(contact_obj)
         try:
             response = self._client.service.addContacts(final_contacts)
-            if response.errors:
+            if hasattr(response, 'errors'):
                 err_str = ', '.join(['%s: %s' % (response.results[x].errorCode,
                                                  response.results[x].errorString)
                                      for x in response.errors])
@@ -59,7 +59,11 @@ class Client(object):
         return response
 
     def add_contact(self, contact):
-        return self.add_contacts([contact, ])
+        contact = self.add_contacts([contact, ])
+        try:
+            return contact.results[0]
+        except:
+            return contact.results
 
     def get_contacts(self, emails):
         final_emails = []
@@ -72,9 +76,11 @@ class Client(object):
             final_emails.append(contact_email)
         contact_filter = self._client.factory.create('contactFilter')
         contact_filter.email = final_emails
+        filter_type = self._client.factory.create('filterType')
         if len(final_emails) > 1:
-            filter_type = self._client.factory.create('filterType')
             contact_filter.type = filter_type.OR
+        else:
+            contact_filter.type = filter_type.AND
 
         try:
             response = self._client.service.readContacts(contact_filter,
@@ -84,7 +90,11 @@ class Client(object):
         return response
 
     def get_contact(self, email):
-        return self.get_contacts([email, ])
+        contact = self.get_contacts([email, ])
+        try:
+            return contact[0]
+        except:
+            return contact
 
     def add_orders(self, orders):
         final_orders = []
@@ -92,12 +102,12 @@ class Client(object):
             if not order.get('id', None):
                 raise ValueError('Each order must provide an id')
             order_obj = self._client.factory.create('orderObject')
-            for field, value in order:
+            for field, value in order.iteritems():
                 if field == 'products':
                     final_products = []
                     for product in value:
                         product_obj = self._client.factory.create('productObject')
-                        for pfield, pvalue in product:
+                        for pfield, pvalue in product.iteritems():
                             if pfield not in self._valid_product_fields:
                                 raise KeyError('Invalid product attribute: %s'
                                                % pfield)
@@ -111,7 +121,7 @@ class Client(object):
             final_orders.append(order_obj)
         try:
             response = self._client.service.addOrUpdateOrders(orders)
-            if response.errors:
+            if hasattr(response, 'errors'):
                 err_str = ', '.join(['%s: %s' % (response.results[x].errorCode,
                                                  response.results[x].errorString)
                                      for x in response.errors])

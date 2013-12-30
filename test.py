@@ -6,16 +6,24 @@ from bronto import client
 
 class BrontoTest(unittest.TestCase):
 
-    def setUp(self):
-        self.token = os.environ.get('BRONTO_API_KEY', '')
-        assert self.token, 'You must set the BRONTO_API_KEY environment variable'
+    @classmethod
+    def setUpClass(cls):
+        cls._token = os.environ.get('BRONTO_API_KEY', '')
+        assert cls._token, 'You must set the BRONTO_API_KEY environment variable'
+        cls._client = client.Client(cls._token)
+        cls._client.login()
 
 
-class BrontoLoginTest(BrontoTest):
+class BrontoContactTest(BrontoTest):
+    contact_info = {'email': 'joey@scottsmarketplace.com'}
 
-    def test_login(self):
-        c = client.Client(self.token)
-        c.login()
+    def test_add_contact(self):
+        contact = self._client.add_contact(self.contact_info)
+        self.assertIs(contact.isError, False)
+
+    def test_get_contact(self):
+        contact = self._client.get_contact(self.contact_info['email'])
+        self.assertEqual(contact.email, self.contact_info['email'])
 
 
 if __name__ == '__main__':
