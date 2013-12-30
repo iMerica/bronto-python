@@ -96,6 +96,21 @@ class Client(object):
         except:
             return contact
 
+    def delete_contacts(self, emails):
+        contacts = self.get_contacts(emails)
+        try:
+            response = self._client.service.deleteContacts(contacts)
+        except WebFault as e:
+            raise BrontoError(e.message)
+        return response
+
+    def delete_contact(self, email):
+        response = self.delete_contacts([email, ])
+        try:
+            return response.results[0]
+        except:
+            return response.results
+
     def add_orders(self, orders):
         final_orders = []
         for order in orders:
