@@ -40,11 +40,27 @@ class Client(object):
             if not any([contact.get('email'), contact.get('mobileNumber')]):
                 raise ValueError('Must provide either an email or mobileNumber')
             contact_obj = self._client.factory.create('contactObject')
-            # FIXME: Add special handling for listIds, fields and SMSKeywordIDs
+            # FIXME: Add special handling for listIds, SMSKeywordIDs
             for field, value in contact.iteritems():
-                if field not in self._valid_contact_fields:
+                if field == 'fields':
+                    final_fields = []
+                    real_fields = self.get_fields(value.keys())
+                    for field_key, field_val in value.iteritems():
+                        try:
+                            real_field = filter(lambda x: x.name == field_key,
+                                                real_fields)[0]
+                        except IndexError:
+                            raise BrontoError('Invalid contactField: %s' %
+                                              field_key)
+                        field_object = self._client.factory.create('contactField')
+                        field_object.fieldId = real_field.id
+                        field_object.content = field_val
+                        final_fields.append(field_object)
+                    contact_obj.fields = final_fields
+                elif field not in self._valid_contact_fields:
                     raise KeyError('Invalid contact attribute: %s' % field)
-                setattr(contact_obj, field, value)
+                else:
+                    setattr(contact_obj, field, value)
             final_contacts.append(contact_obj)
         try:
             response = self._client.service.addContacts(final_contacts)
@@ -181,3 +197,34 @@ class Client(object):
             return response.results[0]
         except:
             return response.results
+
+    def get_fields(self, field_names):
+        final_fields = []
+        filter_operator = self._client.factory.create('filterOperator')
+        fop = filter_operator.EqualTo
+        for field_name in field_names:
+            field_string = self._client.factory.create('stringValue')
+            field_string.operator = fop
+            field_string.value = field_name
+            final_fields.append(field_string)
+        field_filter = self._client.factory.create('fieldsFilter')
+        field_filter.name = final_fields
+        filter_type = self._client.factory.create('filterType')
+        if len(final_fields) > 1:
+            field_filter.type = filter_type.OR
+        else:
+            field_filter.type = filter_type.AND
+
+        try:
+            response = self._client.service.readFields(field_filter,
+                                                       pageNumber=1)
+        except WebFault as e:
+            raise BrontoError(e.message)
+        return response
+
+    def get_field(self, field_name):
+        field = self.get_fields([field_name, ])
+        try:
+            return field[0]
+        except:
+            return field
