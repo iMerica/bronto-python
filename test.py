@@ -8,7 +8,9 @@ from bronto import client
 class BrontoTest(unittest.TestCase):
     contact_info = {'email': 'joey@scottsmarketplace.com',
                     'source': 'api',
-                    'customSource': 'Python client test suite'}
+                    'customSource': 'Python client test suite',
+                    'fields': {'firstname': 'Test',
+                               'lastname': 'User'}}
 
     @classmethod
     def setUpClass(cls):
@@ -26,12 +28,25 @@ class BrontoTest(unittest.TestCase):
         self.assertIs(response.isError, False)
 
 
+class TestFailures(unittest.TestCase):
+
+    def test_no_token(self):
+        with self.assertRaises(ValueError):
+            c = client.Client(None)
+
+    def test_invalid_token(self):
+        with self.assertRaises(client.BrontoError):
+            c = client.Client('invalid')
+            c.login()
+
+
 class BrontoContactTest(BrontoTest):
 
     def test_get_contact(self):
         contact = self._client.get_contact(self.contact_info['email'])
         for key, val in self.contact_info.iteritems():
-            self.assertEqual(getattr(contact, key), val)
+            if key != 'fields':
+                self.assertEqual(getattr(contact, key), val)
 
 
 class BrontoOrderTest(BrontoTest):
