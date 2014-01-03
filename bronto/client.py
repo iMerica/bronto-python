@@ -151,7 +151,7 @@ class Client(object):
                     setattr(order_obj, field, value)
             final_orders.append(order_obj)
         try:
-            response = self._client.service.addOrUpdateOrders(orders)
+            response = self._client.service.addOrUpdateOrders(final_orders)
             if hasattr(response, 'errors'):
                 err_str = ', '.join(['%s: %s' % (response.results[x].errorCode,
                                                  response.results[x].errorString)
