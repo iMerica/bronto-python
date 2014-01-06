@@ -17,6 +17,9 @@ class Client(object):
     _valid_product_fields = ['id', 'sku', 'name', 'description', 'category',
                              'image', 'url', 'quantity', 'price']
 
+    _cached_fields = {}
+    _cached_all_fields = False
+
     def __init__(self, token, **kwargs):
         if not token or not isinstance(token, basestring):
             raise ValueError('Must supply a token as a non empty string.')
@@ -81,7 +84,8 @@ class Client(object):
         except:
             return contact.results
 
-    def get_contacts(self, emails):
+    def get_contacts(self, emails, include_lists=False, fields=[],
+                     page_number=1, include_sms=False):
         final_emails = []
         filter_operator = self._client.factory.create('filterOperator')
         fop = filter_operator.EqualTo
@@ -99,14 +103,22 @@ class Client(object):
             contact_filter.type = filter_type.AND
 
         try:
-            response = self._client.service.readContacts(contact_filter,
-                                                        pageNumber=1)
+            field_objs = self.get_fields(fields)
+            field_ids = [x.id for x in field_objs]
+            response = self._client.service.readContacts(
+                                             contact_filter,
+                                             includeLists=include_lists,
+                                             fields=field_ids,
+                                             pageNumber=page_number,
+                                             includeSMSKeywords=include_sms)
         except WebFault as e:
             raise BrontoError(e.message)
         return response
 
-    def get_contact(self, email):
-        contact = self.get_contacts([email, ])
+    def get_contact(self, email, include_lists=False, fields=[],
+                    include_sms=False):
+        contact = self.get_contacts([email, ], include_lists, fields, 1,
+                                    include_sms)
         try:
             return contact[0]
         except:
@@ -198,15 +210,19 @@ class Client(object):
         except:
             return response.results
 
-    def get_fields(self, field_names):
+    def get_fields(self, field_names=[]):
         final_fields = []
+        cached = []
         filter_operator = self._client.factory.create('filterOperator')
         fop = filter_operator.EqualTo
         for field_name in field_names:
-            field_string = self._client.factory.create('stringValue')
-            field_string.operator = fop
-            field_string.value = field_name
-            final_fields.append(field_string)
+            if field_name in self._cached_fields:
+                cached.append(self._cached_fields[field_name])
+            else:
+                field_string = self._client.factory.create('stringValue')
+                field_string.operator = fop
+                field_string.value = field_name
+                final_fields.append(field_string)
         field_filter = self._client.factory.create('fieldsFilter')
         field_filter.name = final_fields
         filter_type = self._client.factory.create('filterType')
@@ -215,12 +231,22 @@ class Client(object):
         else:
             field_filter.type = filter_type.AND
 
-        try:
-            response = self._client.service.readFields(field_filter,
-                                                       pageNumber=1)
-        except WebFault as e:
-            raise BrontoError(e.message)
-        return response
+        if not self._cached_all_fields:
+            try:
+                response = self._client.service.readFields(field_filter,
+                                                           pageNumber=1)
+                for field in response:
+                    self._cached_fields[field.name] = field
+                if not len(final_fields):
+                    self._cached_all_fields = True
+            except WebFault as e:
+                raise BrontoError(e.message)
+        else:
+            if not field_names:
+                response = [y for x, y in self._cached_fields.iteritems()]
+            else:
+                response = []
+        return response + cached
 
     def get_field(self, field_name):
         field = self.get_fields([field_name, ])
