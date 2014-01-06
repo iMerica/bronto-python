@@ -56,6 +56,10 @@ class BrontoContactTest(BrontoTest):
                 for fkey, fval in field_data.iteritems():
                     self.assertEqual(self.contact_info['fields'][fkey], fval)
 
+    def test_add_contact_no_info(self):
+        with self.assertRaises(ValueError):
+            self._client.add_contacts([{}])
+
 
 class BrontoOrderTest(BrontoTest):
     products = [
