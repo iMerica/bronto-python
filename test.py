@@ -47,6 +47,14 @@ class BrontoContactTest(BrontoTest):
         for key, val in self.contact_info.iteritems():
             if key != 'fields':
                 self.assertEqual(getattr(contact, key), val)
+            else:
+                all_fields = self._client.get_fields()
+                field_names = dict([x.id, x.name] for x in all_fields)
+                field_data = dict([(field_names[x.fieldId], x.content)
+                                   for x in contact.fields if
+                                   field_names[x.fieldId] in self.contact_info['fields']])
+                for fkey, fval in field_data.iteritems():
+                    self.assertEqual(self.contact_info['fields'][fkey], fval)
 
 
 class BrontoOrderTest(BrontoTest):
