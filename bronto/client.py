@@ -37,6 +37,22 @@ class Client(object):
         except WebFault as e:
             raise BrontoError(e.message)
 
+    def _construct_contact_fields(self, fields):
+        final_fields = []
+        real_fields = self.get_fields(fields.keys())
+        for field_key, field_val in fields.iteritems():
+            try:
+                real_field = filter(lambda x: x.name == field_key,
+                                    real_fields)[0]
+            except IndexError:
+                raise BrontoError('Invalid contactField: %s' %
+                                  field_key)
+            field_object = self._client.factory.create('contactField')
+            field_object.fieldId = real_field.id
+            field_object.content = field_val
+            final_fields.append(field_object)
+        return final_fields
+
     def add_contacts(self, contacts):
         final_contacts = []
         for contact in contacts:
@@ -46,20 +62,8 @@ class Client(object):
             # FIXME: Add special handling for listIds, SMSKeywordIDs
             for field, value in contact.iteritems():
                 if field == 'fields':
-                    final_fields = []
-                    real_fields = self.get_fields(value.keys())
-                    for field_key, field_val in value.iteritems():
-                        try:
-                            real_field = filter(lambda x: x.name == field_key,
-                                                real_fields)[0]
-                        except IndexError:
-                            raise BrontoError('Invalid contactField: %s' %
-                                              field_key)
-                        field_object = self._client.factory.create('contactField')
-                        field_object.fieldId = real_field.id
-                        field_object.content = field_val
-                        final_fields.append(field_object)
-                    contact_obj.fields = final_fields
+                    field_objs = self._construct_contact_fields(value)
+                    contact_obj.fields = field_objs
                 elif field not in self._valid_contact_fields:
                     raise KeyError('Invalid contact attribute: %s' % field)
                 else:
@@ -123,6 +127,65 @@ class Client(object):
             return contact[0]
         except:
             return contact
+
+    def update_contacts(self, contacts):
+        """
+        >>> client.update_contacts({'me@domain.com':
+                                      {'mobileNumber': '1234567890',
+                                       'fields':
+                                         {'firstname': 'New', 'lastname': 'Name'}
+                                      },
+                                    'you@domain.com':
+                                      {'email': 'notyou@domain.com',
+                                       'fields':
+                                         {'firstname': 'Other', 'lastname': 'Name'}
+                                      }
+                                   })
+        >>>
+        """
+        contact_objs = self.get_contacts(contacts.keys())
+        final_contacts = []
+        for email, contact_info in contacts.iteritems():
+            try:
+                real_contact = filter(lambda x: x.email == email,
+                                      contact_objs)[0]
+            except IndexError:
+                raise BrontoError('Contact not found: %s' % email)
+            for field, value in contact_info.iteritems():
+                if field == 'fields':
+                    field_objs = self._construct_contact_fields(value)
+                    all_fields = self.get_fields()
+                    field_names = dict([(x.id, x.name) for x in all_fields])
+                    old_fields = dict([(field_names[x.fieldId], x)
+                                       for x in real_contact.fields])
+                    new_fields = dict([(field_names[x.fieldId], x)
+                                       for x in field_objs])
+                    old_fields.update(new_fields)
+                    # This sounds backward, but it's not. Honest.
+                    real_contact.fields = old_fields.values()
+                elif field not in self._valid_contact_fields:
+                    raise KeyError('Invalid contact attribute: %s' % field)
+                else:
+                    setattr(real_contact, field, value)
+            final_contacts.append(real_contact)
+        try:
+            response = self._client.service.updateContacts(final_contacts)
+            if hasattr(response, 'errors'):
+                err_str = ', '.join(['%s: %s' % (response.results[x].errorCode,
+                                                 response.results[x].errorString)
+                                     for x in response.errors])
+                raise BrontoError('An error occurred while adding contacts: %s'
+                                  % err_str)
+        except WebFault as e:
+            raise BrontoError(e.message)
+        return response
+
+    def update_contact(self, email, contact_info):
+        contact = self.update_contacts({email: contact_info})
+        try:
+            return contact.results[0]
+        except:
+            return contact.results
 
     def delete_contacts(self, emails):
         contacts = self.get_contacts(emails)
