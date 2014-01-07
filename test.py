@@ -60,6 +60,20 @@ class BrontoContactTest(BrontoTest):
         with self.assertRaises(ValueError):
             self._client.add_contacts([{}])
 
+    def test_update_contact(self):
+        new_mobile = '6025555555'
+        new_firstname = 'Other'
+        old_contact = self._client.get_contact(self.contact_info['email'])
+        self._client.update_contact(self.contact_info['email'],
+                                    {'mobileNumber': new_mobile,
+                                     'fields': {'firstname': new_firstname}
+                                    })
+        contact = self._client.get_contact(self.contact_info['email'],
+                                           fields=['firstname', ])
+        self.assertEqual(old_contact.id, contact.id)
+        self.assertEqual(contact.mobileNumber, new_mobile)
+        self.assertEqual(contact.fields[0].content, new_firstname)
+
 
 class BrontoOrderTest(BrontoTest):
     products = [
