@@ -6,7 +6,9 @@ easy to use manner, using the `suds <https://fedorahosted.org/suds/>`_ library.
 
 Getting Started
 ===============
+
 .. code:: python
+
     from bronto.client import Client
     
     client = Client('BRONTO_API_TOKEN')
@@ -19,7 +21,9 @@ Contacts
 
 Adding a Contact
 ----------------
+
 .. code:: python
+
     contact_data = {'email': 'me@domain.com',
                     'source': 'api',
                     'customSource': 'Using bronto-python to import my contact'}
@@ -27,12 +31,16 @@ Adding a Contact
 
 Retrieving a contact
 --------------------
+
 .. code:: python
+
     client.get_contact('me@domain.com')
 
 Deleting a contact
 ------------------
+
 .. code:: python
+
     client.delete_contact('me@domain.com')
 
 Orders
@@ -40,7 +48,9 @@ Orders
 
 Adding an order
 ---------------
+
 .. code:: python
+
     order_data = {'id': 'xyz123',
                   'email': 'me@domain.com',
                   'products': [
@@ -62,7 +72,9 @@ Adding an order
 
 Deleting an order
 -----------------
+
 .. code:: python
+
     client.delete_order('xyz123')  # Orders are deleted by their orderId
 
 **NOTE:** This client is not built with long-running processes in mind. The
