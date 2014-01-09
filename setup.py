@@ -22,6 +22,7 @@ setup(name='bronto-python',
       install_requires=requires,
       tests_require=requires,
       description='A python wrapper around Bronto\'s SOAP API',
+      long_description=open('README.rst').read(),
       keywords=['bronto', 'soap', 'marketing'],
       classifiers=[
            'Development Status :: 4 - Beta',
