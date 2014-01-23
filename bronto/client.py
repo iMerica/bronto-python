@@ -187,6 +187,43 @@ class Client(object):
         except:
             return contact.results
 
+    def add_or_update_contacts(self, contacts):
+        # FIXME: This is entirely too similar to add_contacts.
+        # TODO: These two should be refactored.
+        final_contacts = []
+        for contact in contacts:
+            if not any([contact.get('id'), contact.get('email'),
+                        contact.get('mobileNumber')]):
+                raise ValueError('Must provide one of: id, email, mobileNumber')
+            contact_obj = self._client.factory.create('contactObject')
+            for field, value in contact.iteritems():
+                if field == 'fields':
+                    field_objs = self._construct_contact_fields(value)
+                    contact_obj.fields = field_objs
+                elif field not in self._valid_contact_fields:
+                    raise KeyError('Invalid contact attribute: %s' % field)
+                else:
+                    setattr(contact_obj, field, value)
+            final_contacts.append(contact_obj)
+        try:
+            response = self._client.service.addOrUpdateContacts(final_contacts)
+            if hasattr(response, 'errors'):
+                err_str = ', '.join(['%s: %s' % (response.results[x].errorCode,
+                                                 response.results[x].errorString)
+                                     for x in response.errors])
+                raise BrontoError('An error occurred while adding contacts: %s'
+                                  % err_str)
+        except WebFault as e:
+            raise BrontoError(e.message)
+        return response
+
+    def add_or_update_contact(self, contact):
+        contact = self.add_or_update_contacts([contact, ])
+        try:
+            return contact.results[0]
+        except:
+            return contact.results
+
     def delete_contacts(self, emails):
         contacts = self.get_contacts(emails)
         try:
