@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import os
 import unittest
 import uuid
@@ -11,6 +13,12 @@ class BrontoTest(unittest.TestCase):
                     'customSource': 'Python client test suite',
                     'fields': {'firstname': 'Test',
                                'lastname': 'User'}}
+
+    addl_contact_info = {'email': 'joey+bronto@scottsmarketplace.com',
+                         'source': 'api',
+                         'customSource': 'Python client test suite',
+                         'fields': {'firstname': 'Josephus',
+                                    'lastname': 'Wilhelm'}}
 
     @classmethod
     def setUpClass(cls):
@@ -59,6 +67,23 @@ class BrontoContactTest(BrontoTest):
     def test_add_contact_no_info(self):
         with self.assertRaises(ValueError):
             self._client.add_contacts([{}])
+
+    def test_add_or_update_contacts(self):
+        new_mobile = '6025555555'
+        new_firstname = 'Other'
+        old_contact = self._client.get_contact(self.contact_info['email'])
+        self._client.add_or_update_contact({'email': self.contact_info['email'],
+                                            'mobileNumber': new_mobile,
+                                            'fields': {'firstname': new_firstname}
+                                           })
+        contact = self._client.get_contact(self.contact_info['email'],
+                                           fields=['firstname', ])
+        self.assertEqual(old_contact.id, contact.id)
+        self.assertEqual(contact.mobileNumber, new_mobile)
+        self.assertEqual(contact.fields[0].content, new_firstname)
+        new_contact = self._client.add_or_update_contact(self.addl_contact_info)
+        self.assertIs(new_contact.isError, False)
+        self.assertIs(new_contact.isNew, True)
 
     def test_update_contact(self):
         new_mobile = '6025555555'
