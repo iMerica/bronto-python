@@ -16,6 +16,7 @@ class Client(object):
                            'tid']
     _valid_product_fields = ['id', 'sku', 'name', 'description', 'category',
                              'image', 'url', 'quantity', 'price']
+    _valid_field_fields = ['name', 'label', 'type', 'visibility', 'options']
 
     _cached_fields = {}
     _cached_all_fields = False
@@ -310,6 +311,58 @@ class Client(object):
         except:
             return response.results
 
+    def add_fields(self, fields):
+        """
+        >>> client.add_fields([{
+                    'name': 'internal_name',
+                    'label': 'public_name',
+                    'type': 'text',
+                    'visibility': 'private',
+                }, {
+                    'name': 'internal_name2',
+                    'label': 'public_name2',
+                    'type': 'select',
+                    'options': [{
+                        'value': 'value1',
+                        'label': 'Value 1',
+                        'isDefault': 0
+                        }]
+                }])
+        >>>
+        """
+        required_fields = ['name', 'label', 'type']
+        final_fields = []
+        for field in fields:
+            if not all(key in field for key in required_fields):
+                raise ValueError('The attributes %s are required.') % required_fields
+            field_obj = self._client.factory.create('fieldObject')
+            for attribute, value in field.iteritems():
+                if attribute not in self._valid_field_fields:
+                    raise KeyError('Invalid field attribute: %s' % attribute)
+                else:
+                    setattr(field_obj, attribute, value)
+            final_fields.append(field_obj)
+        try:
+            response = self._client.service.addFields(final_fields)
+            if hasattr(response, 'errors'):
+                err_str = ', '.join(['%s: %s' % (response.results[x].errorCode,
+                                                 response.results[x].errorString)
+                                     for x in response.errors])
+                raise BrontoError('An error occurred while adding fields: %s'
+                                  % err_str)
+            # If no error we force to refresh the fields' cache
+            self._cached_all_fields = False
+        except WebFault as e:
+            raise BrontoError(e.message)
+        return response
+
+    def add_field(self, field):
+        request = self.add_fields([field, ])
+        try:
+            return request.results[0]
+        except:
+            return request.results
+
     def get_fields(self, field_names=[]):
         final_fields = []
         cached = []
@@ -354,3 +407,23 @@ class Client(object):
             return field[0]
         except:
             return field
+
+    def delete_fields(self, field_ids):
+        fields = []
+        for field_id in field_ids:
+            field = self._client.factory.create('fieldObject')
+            field.id = field_id
+            fields.append(field)
+        try:
+            response = self._client.service.deleteFields(fields)
+        except WebFault as e:
+            raise BrontoError(e.message)
+        return response
+
+    def delete_field(self, field_id):
+        response = self.delete_fields([field_id, ])
+        try:
+            return response.results[0]
+        except:
+            return response.results
+
