@@ -99,6 +99,60 @@ class BrontoContactTest(BrontoTest):
         self.assertEqual(contact.mobileNumber, new_mobile)
         self.assertEqual(contact.fields[0].content, new_firstname)
 
+class BrontoFieldTest(BrontoTest):
+    """
+    You need to have at least 1 field left in your account
+    http://app.bronto.com/mail/field/index/
+    """
+
+    field_info = {'name': 'new_field',
+                  'label': 'New Field',
+                  'type': 'text'}
+
+    def setUp(self):
+        field = self._client.add_field(self.field_info)
+        self.assertIs(field.isError, False)
+        self.field_info['id'] = field['id']
+
+    def tearDown(self):
+        response = self._client.delete_field(self.field_info['id'])
+        self.assertIs(response.isError, False)
+
+    def test_get_field(self):
+        field = self._client.get_field(self.field_info['name'])
+        for key, val in self.field_info.iteritems():
+            self.assertEqual(getattr(field, key), val)
+
+    def test_add_field_no_info(self):
+        with self.assertRaises(ValueError):
+            self._client.add_field([{}])
+
+    def test_add_field_not_all_required_attributes(self):
+        with self.assertRaises(ValueError):
+            self._client.add_field([{
+                'name': 'mising_something',
+                'label': 'Missing the type I think',
+                'visibility': 'private'
+                }])
+
+    """
+    TODO: Implement the update_field function in the client
+    def test_update_field(self):
+        new_name = 'new_name'
+        new_label = 'Updated field'
+        new_visibility = 'private'
+        old_field = self._client.get_field(self.field_info['id'])
+        self._client.update_field(self.field_info['id'],
+                                    {'name': new_name,
+                                     'label': new_label,
+                                     'visibility': new_visibility
+                                    })
+        field = self._client.get_field(self.field_info['id'])
+        self.assertEqual(old_field.id, field.id)
+        self.assertEqual(field.name, new_name)
+        self.assertEqual(field.label, new_label)
+        self.assertEqual(field.visibility, new_visibility)
+    """
 
 class BrontoOrderTest(BrontoTest):
     products = [

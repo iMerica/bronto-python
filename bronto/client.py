@@ -16,7 +16,7 @@ class Client(object):
                            'tid']
     _valid_product_fields = ['id', 'sku', 'name', 'description', 'category',
                              'image', 'url', 'quantity', 'price']
-    _valid_field_fields = ['name', 'label', 'type', 'visibility', 'options']
+    _valid_field_fields = ['id', 'name', 'label', 'type', 'visibility', 'options']
 
     _cached_fields = {}
     _cached_all_fields = False
