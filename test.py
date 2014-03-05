@@ -141,13 +141,13 @@ class BrontoFieldTest(BrontoTest):
         new_name = 'new_name'
         new_label = 'Updated field'
         new_visibility = 'private'
-        old_field = self._client.get_field(self.field_info['id'])
+        old_field = self._client.get_field(self.field_info['name'])
         self._client.update_field(self.field_info['id'],
                                     {'name': new_name,
                                      'label': new_label,
                                      'visibility': new_visibility
                                     })
-        field = self._client.get_field(self.field_info['id'])
+        field = self._client.get_field(new_name)
         self.assertEqual(old_field.id, field.id)
         self.assertEqual(field.name, new_name)
         self.assertEqual(field.label, new_label)
@@ -188,6 +188,53 @@ class BrontoOrderTest(BrontoTest):
 
     def test_dummy(self):
         pass  # This is just to ensure that setUp/tearDown work
+
+
+class BrontoListTest(BrontoTest):
+
+    list_info = {'name': 'new_list',
+                 'label': 'New List'
+                 }
+
+    def setUp(self):
+        list_ = self._client.add_list(self.list_info)
+        self.assertIs(list_.isError, False)
+        self.list_info['id'] = list_['id']
+
+    def tearDown(self):
+        response = self._client.delete_list(self.list_info['id'])
+        self.assertIs(response.isError, False)
+
+    def test_get_list(self):
+        list_ = self._client.get_list(self.list_info['name'])
+        for key, val in self.list_info.iteritems():
+            self.assertEqual(getattr(list_, key), val)
+
+    def test_add_list_no_info(self):
+        with self.assertRaises(ValueError):
+            self._client.add_list([{}])
+
+    def test_add_list_not_all_required_attributes(self):
+        with self.assertRaises(ValueError):
+            self._client.add_list([{
+                'name': 'mising the label',
+                }])
+
+    """
+    TODO: Implement the update_list function in the client
+    def test_update_list(self):
+        new_name = 'new_name'
+        new_label = 'Updated list'
+        old_list = self._client.get_list(self.list_info['name'])
+        self._client.update_list(self.list_info['id'],
+                                    {'name': new_name,
+                                     'label': new_label
+                                    })
+        list = self._client.get_list(new_name)
+        self.assertEqual(old_list.id, list.id)
+        self.assertEqual(list.name, new_name)
+        self.assertEqual(list.label, new_label)
+    """
 
 
 if __name__ == '__main__':

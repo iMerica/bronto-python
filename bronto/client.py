@@ -17,9 +17,13 @@ class Client(object):
     _valid_product_fields = ['id', 'sku', 'name', 'description', 'category',
                              'image', 'url', 'quantity', 'price']
     _valid_field_fields = ['id', 'name', 'label', 'type', 'visibility', 'options']
+    _valid_list_fields = ['id', 'name', 'label']
 
     _cached_fields = {}
     _cached_all_fields = False
+
+    _cached_lists = {}
+    _cached_all_lists = False
 
     def __init__(self, token, **kwargs):
         if not token or not isinstance(token, basestring):
@@ -365,6 +369,9 @@ class Client(object):
             return request.results
 
     def get_fields(self, field_names=[]):
+        '''
+        TODO: Support search per field_id
+        '''
         final_fields = []
         cached = []
         filter_operator = self._client.factory.create('filterOperator')
@@ -423,6 +430,118 @@ class Client(object):
 
     def delete_field(self, field_id):
         response = self.delete_fields([field_id, ])
+        try:
+            return response.results[0]
+        except:
+            return response.results
+
+    def add_lists(self, lists):
+        """
+        >>> client.add_lists([{
+                    'name': 'internal_name',
+                    'label': 'Pretty name'
+                }, {
+                    'name': 'internal_name2',
+                    'label': 'Pretty name 2'
+                }])
+        >>>
+        """
+        required_attributes = ['name', 'label']
+        final_lists = []
+        for list_ in lists: # Use list_ as list is a built-in object
+            if not all(key in list_ for key in required_attributes):
+                raise ValueError('The attributes %s are required.'
+                                 % required_attributes)
+            list_obj = self._client.factory.create('mailListObject')
+            for attribute, value in list_.iteritems():
+                if attribute not in self._valid_list_fields:
+                    raise KeyError('Invalid list attribute: %s' % attribute)
+                else:
+                    setattr(list_obj, attribute, value)
+            final_lists.append(list_obj)
+        try:
+            response = self._client.service.addLists(final_lists)
+            if hasattr(response, 'errors'):
+                err_str = ', '.join(['%s: %s' % (response.results[x].errorCode,
+                                                 response.results[x].errorString)
+                                     for x in response.errors])
+                raise BrontoError('An error occurred while adding fields: %s'
+                                  % err_str)
+            # If no error we force to refresh the fields' cache
+            self._cached_all_fields = False
+        except WebFault as e:
+            raise BrontoError(e.message)
+        return response
+
+    def add_list(self, list_):
+        request = self.add_lists([list_, ])
+        try:
+            return request.results[0]
+        except:
+            return request.results
+
+    def get_lists(self, list_names=[]):
+        '''
+        TODO: Support search per list_id
+        '''
+        final_lists = []
+        cached = []
+        filter_operator = self._client.factory.create('filterOperator')
+        fop = filter_operator.EqualTo
+        for list_name in list_names:
+            if list_name in self._cached_lists:
+                cached.append(self._cached_lists[list_name])
+            else:
+                list_string = self._client.factory.create('stringValue')
+                list_string.operator = fop
+                list_string.value = list_name
+                final_lists.append(list_string)
+        list_filter = self._client.factory.create('mailListFilter')
+        list_filter.name = final_lists
+        filter_type = self._client.factory.create('filterType')
+        if len(final_lists) > 1:
+            list_filter.type = filter_type.OR
+        else:
+            list_filter.type = filter_type.AND
+
+        if not self._cached_all_lists:
+            try:
+                response = self._client.service.readLists(list_filter,
+                                                          pageNumber=1)
+                for list_ in response:
+                    self._cached_lists[list_.name] = list_
+                if not len(final_lists):
+                    self._cached_all_lists = True
+            except WebFault as e:
+                raise BrontoError(e.message)
+        else:
+            if not list_names:
+                response = [y for x, y in self._cached_lists.iteritems()]
+            else:
+                response = []
+        return response + cached
+
+    def get_list(self, list_name):
+        list_ = self.get_lists([list_name, ])
+        try:
+            return list_[0]
+        except:
+            return list_
+
+    def delete_lists(self, list_ids):
+        lists = []
+        for list_id in list_ids:
+            list_ = self._client.factory.create('mailListObject')
+            list_.id = list_id
+            lists.append(list_)
+        try:
+            response = self._client.service.deleteLists(lists)
+        except WebFault as e:
+            raise BrontoError(e.message)
+        return response
+
+    def delete_list(self, list_id):
+        response = self.delete_lists([list_id, ])
         try:
             return response.results[0]
         except:
