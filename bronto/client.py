@@ -334,7 +334,8 @@ class Client(object):
         final_fields = []
         for field in fields:
             if not all(key in field for key in required_fields):
-                raise ValueError('The attributes %s are required.') % required_fields
+                raise ValueError('The attributes %s are required.'
+                        % required_fields)
             field_obj = self._client.factory.create('fieldObject')
             for attribute, value in field.iteritems():
                 if attribute not in self._valid_field_fields:
