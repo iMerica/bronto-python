@@ -369,9 +369,7 @@ class Client(object):
             return request.results
 
     def get_fields(self, field_names=[]):
-        '''
-        TODO: Support search per field_id
-        '''
+        #TODO: Support search per field_id
         final_fields = []
         cached = []
         filter_operator = self._client.factory.create('filterOperator')
@@ -481,9 +479,7 @@ class Client(object):
             return request.results
 
     def get_lists(self, list_names=[]):
-        '''
-        TODO: Support search per list_id
-        '''
+        #TODO: Support search per list_id
         final_lists = []
         cached = []
         filter_operator = self._client.factory.create('filterOperator')
@@ -547,3 +543,62 @@ class Client(object):
         except:
             return response.results
 
+
+    def add_to_list(self, list_, contacts):
+        """
+        The list must have either an id or a name defined.
+        The contacts must have either an id or an email defined.
+        >>> client.add_to_lists({'id': 'xxx-xxx'},
+                [{id: 'yyy-yyy'}, {email: 'email2@example.com'}])
+        >>> client.add_to_lists({'name': 'my_list'},
+                [{id: 'yyy-yyy'}, {email: 'email2@example.com'}])
+        >>>
+        """
+        valid_list_attributes = ['id', 'name']
+        valid_contact_attributes = ['id', 'email']
+
+        if not any(key in list_ for key in valid_list_attributes):
+            raise ValueError('Must provide either a name '
+                    'or id for your lists.')
+        final_list = self._client.factory.create('mailListObject')
+        for attribute in valid_list_attributes:
+            if attribute in list_:
+                setattr(final_list, attribute, list_[attribute])
+
+        final_contacts = []
+        for contact in contacts:
+            if not any(key in contact for key in valid_contact_attributes):
+                raise ValueError('Must provide either an email '
+                        'or id for your contacts.')
+            contact_obj = self._client.factory.create('contactObject')
+            for attribute in valid_contact_attributes:
+                if attribute in contact:
+                    setattr(contact_obj, attribute, contact[attribute])
+            final_contacts.append(contact_obj)
+        try:
+            response = self._client.service.addToList(final_list,
+                    final_contacts)
+
+            if hasattr(response, 'errors'):
+                err_str = ', '.join(['%s: %s' % (response.results[x].errorCode,
+                                                 response.results[x].errorString)
+                                     for x in response.errors])
+                raise BrontoError(
+                        'An error occurred while adding contacts to a list: %s'
+                        % err_str)
+            # If no error we force to refresh the fields' cache
+            self._cached_all_fields = False
+        except WebFault as e:
+            raise BrontoError(e.message)
+        return response
+
+    def add_to_list_single_contact(self, list_, contact):
+        """
+        Add one contact to one list
+
+        """
+        request = self.add_to_list(list_, [contact,])
+        try:
+            return request.results[0]
+        except:
+            return request.results

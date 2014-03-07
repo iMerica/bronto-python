@@ -110,9 +110,13 @@ class BrontoFieldTest(BrontoTest):
                   'type': 'text'}
 
     def setUp(self):
-        field = self._client.add_field(self.field_info)
-        self.assertIs(field.isError, False)
-        self.field_info['id'] = field['id']
+        try:
+            field = self._client.add_field(self.field_info)
+            self.assertIs(field.isError, False)
+            self.field_info['id'] = field['id']
+        except client.BrontoError:
+            # Pull the field info from Bronto if previous failure in the tests
+            self.field_info = self._client.get_field(self.field_info['name'])
 
     def tearDown(self):
         response = self._client.delete_field(self.field_info['id'])
@@ -197,9 +201,13 @@ class BrontoListTest(BrontoTest):
                  }
 
     def setUp(self):
-        list_ = self._client.add_list(self.list_info)
-        self.assertIs(list_.isError, False)
-        self.list_info['id'] = list_['id']
+        try:
+            list_ = self._client.add_list(self.list_info)
+            self.assertIs(list_.isError, False)
+            self.list_info['id'] = list_['id']
+        except client.BrontoError:
+            # Pull the list id from Bronto if previous failure in the tests
+            self.list_info = self._client.get_list(self.list_info['name'])
 
     def tearDown(self):
         response = self._client.delete_list(self.list_info['id'])
@@ -220,6 +228,16 @@ class BrontoListTest(BrontoTest):
                 'name': 'mising the label',
                 }])
 
+    def test_add_to_list(self):
+        try:
+            super(BrontoListTest, self).setUp()
+            response = self._client.add_to_list_single_contact(
+                    {'name': self.list_info['name']},
+                    {'email': self.contact_info['email']})
+            self.assertIs(response.isError, False)
+        finally:
+            super(BrontoListTest, self).tearDown()
+
     """
     TODO: Implement the update_list function in the client
     def test_update_list(self):
@@ -235,7 +253,6 @@ class BrontoListTest(BrontoTest):
         self.assertEqual(list.name, new_name)
         self.assertEqual(list.label, new_label)
     """
-
 
 if __name__ == '__main__':
     unittest.main()
