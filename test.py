@@ -28,8 +28,13 @@ class BrontoTest(unittest.TestCase):
         cls._client.login()
 
     def setUp(self):
-        contact = self._client.add_contact(self.contact_info)
-        self.assertIs(contact.isError, False)
+        try:
+            contact = self._client.add_contact(self.contact_info)
+            self.assertIs(contact.isError, False)
+        except client.BrontoError:
+            # Get the data from Bronto if the contact wasn't deleted in the
+            # previous tests due to an error.
+            self.contact_info = self._client.get_contact(self.contact_info['email'])
 
     def tearDown(self):
         response = self._client.delete_contact(self.contact_info['email'])
@@ -84,6 +89,8 @@ class BrontoContactTest(BrontoTest):
         new_contact = self._client.add_or_update_contact(self.addl_contact_info)
         self.assertIs(new_contact.isError, False)
         self.assertIs(new_contact.isNew, True)
+        # Delete the extra user
+        self._client.delete_contact(self.addl_contact_info['email'])
 
     def test_update_contact(self):
         new_mobile = '6025555555'
