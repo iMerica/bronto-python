@@ -544,13 +544,13 @@ class Client(object):
             return response.results
 
 
-    def add_to_list(self, list_, contacts):
+    def add_contacts_to_list(self, list_, contacts):
         """
         The list must have either an id or a name defined.
         The contacts must have either an id or an email defined.
-        >>> client.add_to_lists({'id': 'xxx-xxx'},
+        >>> client.add_contacts_to_list({'id': 'xxx-xxx'},
                 [{id: 'yyy-yyy'}, {email: 'email2@example.com'}])
-        >>> client.add_to_lists({'name': 'my_list'},
+        >>> client.add_contacts_to_list({'name': 'my_list'},
                 [{id: 'yyy-yyy'}, {email: 'email2@example.com'}])
         >>>
         """
@@ -592,12 +592,12 @@ class Client(object):
             raise BrontoError(e.message)
         return response
 
-    def add_to_list_single_contact(self, list_, contact):
+    def add_contact_to_list(self, list_, contact):
         """
         Add one contact to one list
 
         """
-        request = self.add_to_list(list_, [contact,])
+        request = self.add_contacts_to_list(list_, [contact,])
         try:
             return request.results[0]
         except:

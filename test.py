@@ -235,10 +235,10 @@ class BrontoListTest(BrontoTest):
                 'name': 'mising the label',
                 }])
 
-    def test_add_to_list(self):
+    def test_add_contact_to_list(self):
         try:
             super(BrontoListTest, self).setUp()
-            response = self._client.add_to_list_single_contact(
+            response = self._client.add_contact_to_list(
                     {'name': self.list_info['name']},
                     {'email': self.contact_info['email']})
             self.assertIs(response.isError, False)
