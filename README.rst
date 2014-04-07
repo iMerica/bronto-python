@@ -77,6 +77,65 @@ Deleting an order
 
     client.delete_order('xyz123')  # Orders are deleted by their orderId
 
+FIELDS
+======
+
+Adding a field
+--------------
+
+.. code:: python
+
+    field_data = {'name': 'my_field',
+                  'label': 'My Field',
+                  'type': 'text',
+                  'visible': 'private'
+                  }
+    client.add_field(field_data)
+
+Retrieving a field
+------------------
+
+.. code:: python
+
+    client.get_field('my_field')
+
+Deleting a field
+----------------
+
+.. code:: python
+
+    field = client.get_field('my_field')
+    client.delete_field(field.id)
+
+LISTS
+=====
+
+Adding a list
+-------------
+
+.. code:: python
+
+    list_data = {'name': 'my_list',
+                  'label': 'My List'
+                  }
+    client.add_list(list_data)
+
+Retrieving a list
+-----------------
+
+.. code:: python
+
+    client.get_list('my_list')
+
+Deleting a list
+---------------
+
+.. code:: python
+
+    list_to_del = client.get_list('my_list')
+    client.delete_field(list_to_del.id)
+
+
 **NOTE:** This client is not built with long-running processes in mind. The
 Bronto API connection will time out after 20 minutes of inactivity, and this
 client does NOT handle those timeouts.

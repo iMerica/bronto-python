@@ -16,9 +16,14 @@ class Client(object):
                            'tid']
     _valid_product_fields = ['id', 'sku', 'name', 'description', 'category',
                              'image', 'url', 'quantity', 'price']
+    _valid_field_fields = ['id', 'name', 'label', 'type', 'visibility', 'options']
+    _valid_list_fields = ['id', 'name', 'label']
 
     _cached_fields = {}
     _cached_all_fields = False
+
+    _cached_lists = {}
+    _cached_all_lists = False
 
     def __init__(self, token, **kwargs):
         if not token or not isinstance(token, basestring):
@@ -310,7 +315,61 @@ class Client(object):
         except:
             return response.results
 
+    def add_fields(self, fields):
+        """
+        >>> client.add_fields([{
+                    'name': 'internal_name',
+                    'label': 'public_name',
+                    'type': 'text',
+                    'visibility': 'private',
+                }, {
+                    'name': 'internal_name2',
+                    'label': 'public_name2',
+                    'type': 'select',
+                    'options': [{
+                        'value': 'value1',
+                        'label': 'Value 1',
+                        'isDefault': 0
+                        }]
+                }])
+        >>>
+        """
+        required_attributes = ['name', 'label', 'type']
+        final_fields = []
+        for field in fields:
+            if not all(key in field for key in required_attributes):
+                raise ValueError('The attributes %s are required.'
+                        % required_attributes)
+            field_obj = self._client.factory.create('fieldObject')
+            for attribute, value in field.iteritems():
+                if attribute not in self._valid_field_fields:
+                    raise KeyError('Invalid field attribute: %s' % attribute)
+                else:
+                    setattr(field_obj, attribute, value)
+            final_fields.append(field_obj)
+        try:
+            response = self._client.service.addFields(final_fields)
+            if hasattr(response, 'errors'):
+                err_str = ', '.join(['%s: %s' % (response.results[x].errorCode,
+                                                 response.results[x].errorString)
+                                     for x in response.errors])
+                raise BrontoError('An error occurred while adding fields: %s'
+                                  % err_str)
+            # If no error we force to refresh the fields' cache
+            self._cached_all_fields = False
+        except WebFault as e:
+            raise BrontoError(e.message)
+        return response
+
+    def add_field(self, field):
+        request = self.add_fields([field, ])
+        try:
+            return request.results[0]
+        except:
+            return request.results
+
     def get_fields(self, field_names=[]):
+        #TODO: Support search per field_id
         final_fields = []
         cached = []
         filter_operator = self._client.factory.create('filterOperator')
@@ -354,3 +413,192 @@ class Client(object):
             return field[0]
         except:
             return field
+
+    def delete_fields(self, field_ids):
+        fields = []
+        for field_id in field_ids:
+            field = self._client.factory.create('fieldObject')
+            field.id = field_id
+            fields.append(field)
+        try:
+            response = self._client.service.deleteFields(fields)
+        except WebFault as e:
+            raise BrontoError(e.message)
+        return response
+
+    def delete_field(self, field_id):
+        response = self.delete_fields([field_id, ])
+        try:
+            return response.results[0]
+        except:
+            return response.results
+
+    def add_lists(self, lists):
+        """
+        >>> client.add_lists([{
+                    'name': 'internal_name',
+                    'label': 'Pretty name'
+                }, {
+                    'name': 'internal_name2',
+                    'label': 'Pretty name 2'
+                }])
+        >>>
+        """
+        required_attributes = ['name', 'label']
+        final_lists = []
+        for list_ in lists: # Use list_ as list is a built-in object
+            if not all(key in list_ for key in required_attributes):
+                raise ValueError('The attributes %s are required.'
+                                 % required_attributes)
+            list_obj = self._client.factory.create('mailListObject')
+            for attribute, value in list_.iteritems():
+                if attribute not in self._valid_list_fields:
+                    raise KeyError('Invalid list attribute: %s' % attribute)
+                else:
+                    setattr(list_obj, attribute, value)
+            final_lists.append(list_obj)
+        try:
+            response = self._client.service.addLists(final_lists)
+            if hasattr(response, 'errors'):
+                err_str = ', '.join(['%s: %s' % (response.results[x].errorCode,
+                                                 response.results[x].errorString)
+                                     for x in response.errors])
+                raise BrontoError('An error occurred while adding fields: %s'
+                                  % err_str)
+            # If no error we force to refresh the fields' cache
+            self._cached_all_fields = False
+        except WebFault as e:
+            raise BrontoError(e.message)
+        return response
+
+    def add_list(self, list_):
+        request = self.add_lists([list_, ])
+        try:
+            return request.results[0]
+        except:
+            return request.results
+
+    def get_lists(self, list_names=[]):
+        #TODO: Support search per list_id
+        final_lists = []
+        cached = []
+        filter_operator = self._client.factory.create('filterOperator')
+        fop = filter_operator.EqualTo
+        for list_name in list_names:
+            if list_name in self._cached_lists:
+                cached.append(self._cached_lists[list_name])
+            else:
+                list_string = self._client.factory.create('stringValue')
+                list_string.operator = fop
+                list_string.value = list_name
+                final_lists.append(list_string)
+        list_filter = self._client.factory.create('mailListFilter')
+        list_filter.name = final_lists
+        filter_type = self._client.factory.create('filterType')
+        if len(final_lists) > 1:
+            list_filter.type = filter_type.OR
+        else:
+            list_filter.type = filter_type.AND
+
+        if not self._cached_all_lists:
+            try:
+                response = self._client.service.readLists(list_filter,
+                                                          pageNumber=1)
+                for list_ in response:
+                    self._cached_lists[list_.name] = list_
+                if not len(final_lists):
+                    self._cached_all_lists = True
+            except WebFault as e:
+                raise BrontoError(e.message)
+        else:
+            if not list_names:
+                response = [y for x, y in self._cached_lists.iteritems()]
+            else:
+                response = []
+        return response + cached
+
+    def get_list(self, list_name):
+        list_ = self.get_lists([list_name, ])
+        try:
+            return list_[0]
+        except:
+            return list_
+
+    def delete_lists(self, list_ids):
+        lists = []
+        for list_id in list_ids:
+            list_ = self._client.factory.create('mailListObject')
+            list_.id = list_id
+            lists.append(list_)
+        try:
+            response = self._client.service.deleteLists(lists)
+        except WebFault as e:
+            raise BrontoError(e.message)
+        return response
+
+    def delete_list(self, list_id):
+        response = self.delete_lists([list_id, ])
+        try:
+            return response.results[0]
+        except:
+            return response.results
+
+
+    def add_contacts_to_list(self, list_, contacts):
+        """
+        The list must have either an id or a name defined.
+        The contacts must have either an id or an email defined.
+        >>> client.add_contacts_to_list({'id': 'xxx-xxx'},
+                [{id: 'yyy-yyy'}, {email: 'email2@example.com'}])
+        >>> client.add_contacts_to_list({'name': 'my_list'},
+                [{id: 'yyy-yyy'}, {email: 'email2@example.com'}])
+        >>>
+        """
+        valid_list_attributes = ['id', 'name']
+        valid_contact_attributes = ['id', 'email']
+
+        if not any(key in list_ for key in valid_list_attributes):
+            raise ValueError('Must provide either a name '
+                    'or id for your lists.')
+        final_list = self._client.factory.create('mailListObject')
+        for attribute in valid_list_attributes:
+            if attribute in list_:
+                setattr(final_list, attribute, list_[attribute])
+
+        final_contacts = []
+        for contact in contacts:
+            if not any(key in contact for key in valid_contact_attributes):
+                raise ValueError('Must provide either an email '
+                        'or id for your contacts.')
+            contact_obj = self._client.factory.create('contactObject')
+            for attribute in valid_contact_attributes:
+                if attribute in contact:
+                    setattr(contact_obj, attribute, contact[attribute])
+            final_contacts.append(contact_obj)
+        try:
+            response = self._client.service.addToList(final_list,
+                    final_contacts)
+
+            if hasattr(response, 'errors'):
+                err_str = ', '.join(['%s: %s' % (response.results[x].errorCode,
+                                                 response.results[x].errorString)
+                                     for x in response.errors])
+                raise BrontoError(
+                        'An error occurred while adding contacts to a list: %s'
+                        % err_str)
+            # If no error we force to refresh the fields' cache
+            self._cached_all_fields = False
+        except WebFault as e:
+            raise BrontoError(e.message)
+        return response
+
+    def add_contact_to_list(self, list_, contact):
+        """
+        Add one contact to one list
+
+        """
+        request = self.add_contacts_to_list(list_, [contact,])
+        try:
+            return request.results[0]
+        except:
+            return request.results
