@@ -1,0 +1,10 @@
+language: python
+python:
+  - "2.7"
+  - "2.6"
+install:
+  - pip install -r requirements.txt
+env:
+  - secure: "SuaLT9BPAeq29+0LJzZqUfYA5dKWPVLxKHC9CdtVW8dQArcCMQNuB5yKNbxhcxbu+mdjNtUNPygFi2VFTZyg2wjzAUEmdnyXX+r3lmv9y108gWveq5ox2v6cRdXapsBn+O/yCF05MjzzlUTxNwRb8z8ERuUFVNETCDzSwVTmZew="
+script:
+  - python test.py
