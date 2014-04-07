@@ -4,6 +4,15 @@ bronto-python
 bronto-python is a python query client which wraps the Bronto SOAP API in an
 easy to use manner, using the `suds <https://fedorahosted.org/suds/>`_ library.
 
+.. image:: https://travis-ci.org/Scotts-Marketplace/bronto-python.svg?branch=master
+        :target: https://travis-ci.org/Scotts-Marketplace/bronto-python
+
+.. image:: https://coveralls.io/repos/Scotts-Marketplace/bronto-python/badge.png?branch=master
+        :target: https://coveralls.io/r/Scotts-Marketplace/bronto-python?branch=master
+
+.. image:: https://pypip.in/d/bronto-python/badge.png
+        :target: https://crate.io/packages/bronto-python/
+
 Getting Started
 ===============
 
