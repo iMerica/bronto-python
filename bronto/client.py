@@ -495,6 +495,10 @@ class Client(object):
                 list_string.operator = fop
                 list_string.value = list_name
                 final_lists.append(list_string)
+
+        if list_names and not final_lists: # if we already have all the lists
+            return [self._cached_lists.get(name) for name in list_names]
+
         list_filter = self._client.factory.create('mailListFilter')
         list_filter.name = final_lists
         filter_type = self._client.factory.create('filterType')
