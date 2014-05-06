@@ -25,6 +25,9 @@ class Client(object):
     _cached_lists = {}
     _cached_all_lists = False
 
+    _cached_messages = {}
+    _cached_all_messages = False
+
     def __init__(self, token, **kwargs):
         if not token or not isinstance(token, basestring):
             raise ValueError('Must supply a token as a non empty string.')
@@ -602,3 +605,50 @@ class Client(object):
             return request.results[0]
         except:
             return request.results
+
+    def get_messages(self, message_names=[]):
+        #TODO: Support search per message_id
+        final_messages = []
+        cached = []
+        filter_operator = self._client.factory.create('filterOperator')
+        fop = filter_operator.EqualTo
+        for message_name in message_names:
+            if message_name in self._cached_messages:
+                cached.append(self._cached_messages[message_name])
+            else:
+                message_string = self._client.factory.create('stringValue')
+                message_string.operator = fop
+                message_string.value = message_name
+                final_messages.append(message_string)
+
+        if message_names and not final_messages: # if we already have all the messages
+            return [self._cached_messages.get(name) for name in message_names]
+
+        message_filter = self._client.factory.create('messageFilter')
+        message_filter.name = final_messages
+        filter_type = self._client.factory.create('filterType')
+        message_filter.type = filter_type.OR
+
+        if not self._cached_all_messages:
+            try:
+                response = self._client.service.readMessages(message_filter,
+                                                             pageNumber=1)
+                for message in response:
+                    self._cached_messages[message.name] = message
+                if not len(final_messages):
+                    self._cached_all_messages = True
+            except WebFault as e:
+                raise BrontoError(e.message)
+        else:
+            if not message_names:
+                response = [y for x, y in self._cached_messages.iteritems()]
+            else:
+                response = []
+        return response + cached
+
+    def get_message(self, message_name):
+        messages = self.get_messages([message_name, ])
+        try:
+            return messages[0]
+        except:
+            return messages

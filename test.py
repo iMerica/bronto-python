@@ -261,5 +261,31 @@ class BrontoListTest(BrontoTest):
         self.assertEqual(list.label, new_label)
     """
 
+class BrontoMessageTest(BrontoTest):
+
+    message_info = {
+            'name': 'bronto_api_test',
+            }
+
+    def test_get_message(self):
+        message = self._client.get_message(self.message_info['name'])
+        if not message:
+            raise Exception("You need to create a message with the name bronto_api_test")
+        for key, val in self.message_info.iteritems():
+            self.assertEqual(getattr(message, key), val)
+
+    def test_get_message_wrong_name(self):
+        message = self._client.get_message('IDontExist')
+        self.assertEqual(len(message), 0)
+
+    def test_get_messages(self):
+        messages = self._client.get_messages([self.message_info['name']])
+        if not messages:
+            raise Exception("You need to create a message with the name bronto_api_test")
+        self.assertEqual(len(messages), 1)
+        for key, val in self.message_info.iteritems():
+            self.assertEqual(getattr(messages[0], key), val)
+
+
 if __name__ == '__main__':
     unittest.main()
