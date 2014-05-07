@@ -5,6 +5,7 @@ import unittest
 import uuid
 
 from bronto import client
+from datetime import datetime
 
 
 class BrontoTest(unittest.TestCase):
@@ -292,7 +293,59 @@ class BrontoMessageTest(BrontoTest):
         for key, val in self.message_info.iteritems():
             self.assertEqual(getattr(messages[0], key), val)
 
-# TODO add tests for the deliveries
+class BrontoDeliveryTest(BrontoTest):
+
+    message_info = {
+            'name': 'bronto_api_test'
+            }
+
+    def setUp(self):
+        super(BrontoDeliveryTest, self).setUp()
+        try:
+            recipient = self._client.add_contact(self.addl_contact_info)
+            self.assertIs(recipient.isError, False)
+        except client.BrontoError:
+            # Get the data from Bronto if the contact wasn't deleted in the
+            # previous tests due to an error.
+            self.addl_contact_info = self._client.get_contact(
+                    self.addl_contact_info['email'])
+
+    def test_add_delivery(self):
+        message = self._client.get_message(self.message_info['name'])
+        if not message:
+            raise Exception("You need to create a message with the name bronto_api_test")
+
+        recipient = self._client.get_contact(self.addl_contact_info['email'])
+
+        response = self._client.add_delivery({
+                'start': datetime.strftime(datetime.utcnow(), '%FT%T+00:00'),
+                'messageId': message.id,
+                'fromName': '%s %s' % (self.contact_info['fields']['firstname'],
+                                       self.contact_info['fields']['lastname']),
+                'fromEmail': self.contact_info['email'],
+                'recipients': [{
+                    'type': 'contact',
+                    'id': recipient.id
+                }],
+                'type': 'triggered',
+                'fields': [{
+                    'name': 'link',
+                    'type': 'html',
+                    'content': '<a href="http://www.test.com">link</a>'
+                    }, {
+                    'name': 'message',
+                    'type': 'html',
+                    'content': 'Dynamic message!!!'
+                }]
+            })
+        self.assertIs(response.isError, False)
+        self.assertIs(response.isNew, True)
+
+
+    def tearDown(self):
+        super(BrontoDeliveryTest, self).tearDown()
+        response = self._client.delete_contact(self.addl_contact_info['email'])
+        self.assertIs(response.isError, False)
 
 if __name__ == '__main__':
     unittest.main()
