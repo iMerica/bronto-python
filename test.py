@@ -264,8 +264,14 @@ class BrontoListTest(BrontoTest):
 class BrontoMessageTest(BrontoTest):
 
     message_info = {
-            'name': 'bronto_api_test',
+            'name': 'bronto_api_test'
             }
+
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        pass
 
     def test_get_message(self):
         message = self._client.get_message(self.message_info['name'])
