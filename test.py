@@ -286,6 +286,7 @@ class BrontoMessageTest(BrontoTest):
         for key, val in self.message_info.iteritems():
             self.assertEqual(getattr(messages[0], key), val)
 
+# TODO add tests for the deliveries
 
 if __name__ == '__main__':
     unittest.main()

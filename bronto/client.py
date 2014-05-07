@@ -18,6 +18,10 @@ class Client(object):
                              'image', 'url', 'quantity', 'price']
     _valid_field_fields = ['id', 'name', 'label', 'type', 'visibility', 'options']
     _valid_list_fields = ['id', 'name', 'label']
+    _valid_delivery_fields = ['authentication', 'fatigueOverride', 'fields',
+            'fromEmail', 'fromName', 'messageId', 'messageRuleId', 'optin',
+            'recipients', 'remail', 'replyEmail', 'replyTracking', 'start',
+            'throttle', 'type']
 
     _cached_fields = {}
     _cached_all_fields = False
@@ -656,3 +660,69 @@ class Client(object):
             return messages[0]
         except:
             return messages
+
+    def add_deliveries(self, deliveries):
+        """
+        >>> client.add_deliveries([{
+                'start': '2014-05-07T00:42:07',
+                'messageId': 'xxxxx-xxxx-xxxxx',
+                'fromName': 'John Doe',
+                'fromEmail': 'test@example.com',
+                'recipients': [{
+                    'type': 'contact',
+                    'id': 'xxxxx-xxxx-xxxxx'
+                }],
+                'type': 'transactional',
+                'fields': [{
+                    'name': 'link',
+                    'type': 'html',
+                    'content': '<a href="http://www.test.com">link</a>'
+                    }, {
+                    'name': 'message',
+                    'type': 'html',
+                    'content': 'Dynamic message!!!'
+                }]
+            }])
+        >>>
+
+        The timezone of the start date is considered to be the one you have setup
+        in your bronto account if you don't specify it. If you want to use UTC,
+        you can use:
+        from datetime import datetime
+        datetime.strftime(datetime.utcnow(), '%FT%T+00:00')
+
+        For more details: http://dev.bronto.com/api/v4/data-format
+        """
+        required_attributes = ['start', 'messageId', 'type', 'fromEmail',
+                #'replyEmail', Even if the doc says so, it's not required
+                'fromName', 'recipients']
+        final_deliveries = []
+        for delivery in deliveries:
+            if not all(key in delivery for key in required_attributes):
+                raise ValueError('The attributes %s are required.'
+                                 % required_attributes)
+            delivery_obj = self._client.factory.create('deliveryObject')
+            for attribute, value in delivery.iteritems():
+                if attribute not in self._valid_delivery_fields:
+                    raise KeyError('Invalid list attribute: %s' % attribute)
+                else:
+                    setattr(delivery_obj, attribute, value)
+            final_deliveries.append(delivery_obj)
+        try:
+            response = self._client.service.addDeliveries(final_deliveries)
+            if hasattr(response, 'errors'):
+                err_str = ', '.join(['%s: %s' % (response.results[x].errorCode,
+                                                 response.results[x].errorString)
+                                     for x in response.errors])
+                raise BrontoError('An error occurred while adding deliveries: %s'
+                                  % err_str)
+        except WebFault as e:
+            raise BrontoError(e.message)
+        return response
+
+    def add_delivery(self, delivery):
+        request = self.add_deliveries([delivery, ])
+        try:
+            return request.results[0]
+        except:
+            return request.results
