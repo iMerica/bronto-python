@@ -1,0 +1,42 @@
+0.7.0 - 03 July 2014
+=====
+
+ * New methods:
+   * get_message/get_messages
+   * add_delivery/add_deliveries
+
+
+0.6.0 - 07 April 2014
+=====
+
+ * Added Arthur Rio <https://github.com/arthurio> as an author
+ * Configured Travis builds
+ * New methods:
+   * add_field/add_fields
+   * delete_field/delete_fields
+   * add_list/add_lists
+   * get_list/get_lists
+   * delete_list/delete_lists
+   * add_contact_to_list/add_contacts_to_list
+
+
+0.5.0 - 23 January 2014
+=====
+
+ * New methods:
+   * add_or_update_contact/add_or_update_contacts
+
+
+0.4.1 - 08 January 2014
+=====
+
+ * Changed from a markdown to rSt README
+
+
+0.4.0 - 08 January 2014
+=====
+ * Initial PyPi release
+ * Implemented caching of field data
+ * Retrieving field info in get_contact/get_contacts
+ * New methods:
+   * update_contact/update_contacts
