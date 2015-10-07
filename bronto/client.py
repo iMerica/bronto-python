@@ -18,19 +18,12 @@ class Client(object):
                              'image', 'url', 'quantity', 'price']
     _valid_field_fields = ['id', 'name', 'label', 'type', 'visibility', 'options']
     _valid_list_fields = ['id', 'name', 'label']
-    _valid_delivery_fields = ['authentication', 'fatigueOverride', 'fields',
-            'fromEmail', 'fromName', 'messageId', 'messageRuleId', 'optin',
-            'recipients', 'remail', 'replyEmail', 'replyTracking', 'start',
-            'throttle', 'type']
 
     _cached_fields = {}
     _cached_all_fields = False
 
     _cached_lists = {}
     _cached_all_lists = False
-
-    _cached_messages = {}
-    _cached_all_messages = False
 
     def __init__(self, token, **kwargs):
         if not token or not isinstance(token, basestring):
@@ -499,10 +492,6 @@ class Client(object):
                 list_string.operator = fop
                 list_string.value = list_name
                 final_lists.append(list_string)
-
-        if list_names and not final_lists: # if we already have all the lists
-            return [self._cached_lists.get(name) for name in list_names]
-
         list_filter = self._client.factory.create('mailListFilter')
         list_filter.name = final_lists
         filter_type = self._client.factory.create('filterType')
@@ -609,119 +598,6 @@ class Client(object):
 
         """
         request = self.add_contacts_to_list(list_, [contact,])
-        try:
-            return request.results[0]
-        except:
-            return request.results
-
-    def get_messages(self, message_names=[]):
-        #TODO: Support search per message_id
-        final_messages = []
-        cached = []
-        filter_operator = self._client.factory.create('filterOperator')
-        fop = filter_operator.EqualTo
-        for message_name in message_names:
-            if message_name in self._cached_messages:
-                cached.append(self._cached_messages[message_name])
-            else:
-                message_string = self._client.factory.create('stringValue')
-                message_string.operator = fop
-                message_string.value = message_name
-                final_messages.append(message_string)
-
-        if message_names and not final_messages: # if we already have all the messages
-            return [self._cached_messages.get(name) for name in message_names]
-
-        message_filter = self._client.factory.create('messageFilter')
-        message_filter.name = final_messages
-        filter_type = self._client.factory.create('filterType')
-        message_filter.type = filter_type.OR
-
-        if not self._cached_all_messages:
-            try:
-                response = self._client.service.readMessages(message_filter,
-                                                             pageNumber=1)
-                for message in response:
-                    self._cached_messages[message.name] = message
-                if not len(final_messages):
-                    self._cached_all_messages = True
-            except WebFault as e:
-                raise BrontoError(e.message)
-        else:
-            if not message_names:
-                response = [y for x, y in self._cached_messages.iteritems()]
-            else:
-                response = []
-        return response + cached
-
-    def get_message(self, message_name):
-        messages = self.get_messages([message_name, ])
-        try:
-            return messages[0]
-        except:
-            return messages
-
-    def add_deliveries(self, deliveries):
-        """
-        >>> client.add_deliveries([{
-                'start': '2014-05-07T00:42:07',
-                'messageId': 'xxxxx-xxxx-xxxxx',
-                'fromName': 'John Doe',
-                'fromEmail': 'test@example.com',
-                'recipients': [{
-                    'type': 'contact',
-                    'id': 'xxxxx-xxxx-xxxxx'
-                }],
-                'type': 'transactional',
-                'fields': [{
-                    'name': 'link',
-                    'type': 'html',
-                    'content': '<a href="http://www.test.com">link</a>'
-                    }, {
-                    'name': 'message',
-                    'type': 'html',
-                    'content': 'Dynamic message!!!'
-                }]
-            }])
-        >>>
-
-        The timezone of the start date is considered to be the one you have setup
-        in your bronto account if you don't specify it. If you want to use UTC,
-        you can use:
-        from datetime import datetime
-        datetime.strftime(datetime.utcnow(), '%FT%T+00:00')
-
-        For more details: http://dev.bronto.com/api/v4/data-format
-        """
-        required_attributes = ['start', 'messageId', 'type', 'fromEmail',
-                #'replyEmail', Even if the doc says so, it's not required
-                'fromName', 'recipients']
-        final_deliveries = []
-        for delivery in deliveries:
-            if not all(key in delivery for key in required_attributes):
-                raise ValueError('The attributes %s are required.'
-                                 % required_attributes)
-            delivery_obj = self._client.factory.create('deliveryObject')
-            for attribute, value in delivery.iteritems():
-                if attribute not in self._valid_delivery_fields:
-                    raise KeyError('Invalid list attribute: %s' % attribute)
-                else:
-                    setattr(delivery_obj, attribute, value)
-            final_deliveries.append(delivery_obj)
-        try:
-            response = self._client.service.addDeliveries(final_deliveries)
-            if hasattr(response, 'errors'):
-                err_str = ', '.join(['%s: %s' % (response.results[x].errorCode,
-                                                 response.results[x].errorString)
-                                     for x in response.errors])
-                raise BrontoError('An error occurred while adding deliveries: %s'
-                                  % err_str)
-        except WebFault as e:
-            raise BrontoError(e.message)
-        return response
-
-    def add_delivery(self, delivery):
-        request = self.add_deliveries([delivery, ])
         try:
             return request.results[0]
         except:
