@@ -1,5 +1,6 @@
+import six
 from suds import WebFault
-from suds.client import Client as SudsClient
+import suds.client
 
 API_ENDPOINT = 'https://api.bronto.com/v4?wsdl'
 
@@ -33,14 +34,14 @@ class Client(object):
     _cached_all_messages = False
 
     def __init__(self, token, **kwargs):
-        if not token or not isinstance(token, basestring):
+        if not token or not isinstance(token, six.string_types):
             raise ValueError('Must supply a token as a non empty string.')
 
         self._token = token
         self._client = None
 
     def login(self):
-        self._client = SudsClient(API_ENDPOINT)
+        self._client = suds.client.Client(API_ENDPOINT)
         try:
             self.session_id = self._client.service.login(self._token)
             session_header = self._client.factory.create('sessionHeader')
@@ -52,10 +53,10 @@ class Client(object):
     def _construct_contact_fields(self, fields):
         final_fields = []
         real_fields = self.get_fields(fields.keys())
-        for field_key, field_val in fields.iteritems():
+        for field_key, field_val in six.iteritems(fields):
             try:
-                real_field = filter(lambda x: x.name == field_key,
-                                    real_fields)[0]
+                real_field = list(filter(lambda x: x.name == field_key,
+                                         real_fields))[0]
             except IndexError:
                 raise BrontoError('Invalid contactField: %s' %
                                   field_key)
@@ -72,7 +73,7 @@ class Client(object):
                 raise ValueError('Must provide either an email or mobileNumber')
             contact_obj = self._client.factory.create('contactObject')
             # FIXME: Add special handling for listIds, SMSKeywordIDs
-            for field, value in contact.iteritems():
+            for field, value in six.iteritems(contact):
                 if field == 'fields':
                     field_objs = self._construct_contact_fields(value)
                     contact_obj.fields = field_objs
@@ -157,13 +158,13 @@ class Client(object):
         """
         contact_objs = self.get_contacts(contacts.keys())
         final_contacts = []
-        for email, contact_info in contacts.iteritems():
+        for email, contact_info in six.iteritems(contacts):
             try:
-                real_contact = filter(lambda x: x.email == email,
-                                      contact_objs)[0]
+                real_contact = list(filter(lambda x: x.email == email,
+                                           contact_objs))[0]
             except IndexError:
                 raise BrontoError('Contact not found: %s' % email)
-            for field, value in contact_info.iteritems():
+            for field, value in six.iteritems(contact_info):
                 if field == 'fields':
                     field_objs = self._construct_contact_fields(value)
                     all_fields = self.get_fields()
@@ -174,7 +175,7 @@ class Client(object):
                                        for x in field_objs])
                     old_fields.update(new_fields)
                     # This sounds backward, but it's not. Honest.
-                    real_contact.fields = old_fields.values()
+                    real_contact.fields = list(old_fields.values())
                 elif field not in self._valid_contact_fields:
                     raise KeyError('Invalid contact attribute: %s' % field)
                 else:
@@ -208,7 +209,7 @@ class Client(object):
                         contact.get('mobileNumber')]):
                 raise ValueError('Must provide one of: id, email, mobileNumber')
             contact_obj = self._client.factory.create('contactObject')
-            for field, value in contact.iteritems():
+            for field, value in six.iteritems(contact):
                 if field == 'fields':
                     field_objs = self._construct_contact_fields(value)
                     contact_obj.fields = field_objs
@@ -257,12 +258,12 @@ class Client(object):
             if not order.get('id', None):
                 raise ValueError('Each order must provide an id')
             order_obj = self._client.factory.create('orderObject')
-            for field, value in order.iteritems():
+            for field, value in six.iteritems(order):
                 if field == 'products':
                     final_products = []
                     for product in value:
                         product_obj = self._client.factory.create('productObject')
-                        for pfield, pvalue in product.iteritems():
+                        for pfield, pvalue in six.iteritems(product):
                             if pfield not in self._valid_product_fields:
                                 raise KeyError('Invalid product attribute: %s'
                                                % pfield)
@@ -348,7 +349,7 @@ class Client(object):
                 raise ValueError('The attributes %s are required.'
                         % required_attributes)
             field_obj = self._client.factory.create('fieldObject')
-            for attribute, value in field.iteritems():
+            for attribute, value in six.iteritems(field):
                 if attribute not in self._valid_field_fields:
                     raise KeyError('Invalid field attribute: %s' % attribute)
                 else:
@@ -409,7 +410,7 @@ class Client(object):
                 raise BrontoError(e.message)
         else:
             if not field_names:
-                response = [y for x, y in self._cached_fields.iteritems()]
+                response = [y for x, y in six.iteritems(self._cached_fields)]
             else:
                 response = []
         return response + cached
@@ -458,7 +459,7 @@ class Client(object):
                 raise ValueError('The attributes %s are required.'
                                  % required_attributes)
             list_obj = self._client.factory.create('mailListObject')
-            for attribute, value in list_.iteritems():
+            for attribute, value in six.iteritems(list_):
                 if attribute not in self._valid_list_fields:
                     raise KeyError('Invalid list attribute: %s' % attribute)
                 else:
@@ -523,7 +524,7 @@ class Client(object):
                 raise BrontoError(e.message)
         else:
             if not list_names:
-                response = [y for x, y in self._cached_lists.iteritems()]
+                response = [y for x, y in six.iteritems(self._cached_lists)]
             else:
                 response = []
         return response + cached
@@ -649,7 +650,7 @@ class Client(object):
                 raise BrontoError(e.message)
         else:
             if not message_names:
-                response = [y for x, y in self._cached_messages.iteritems()]
+                response = [y for x, y in six.iteritems(self._cached_messages)]
             else:
                 response = []
         return response + cached
@@ -702,7 +703,7 @@ class Client(object):
                 raise ValueError('The attributes %s are required.'
                                  % required_attributes)
             delivery_obj = self._client.factory.create('deliveryObject')
-            for attribute, value in delivery.iteritems():
+            for attribute, value in six.iteritems(delivery):
                 if attribute not in self._valid_delivery_fields:
                     raise KeyError('Invalid list attribute: %s' % attribute)
                 else:

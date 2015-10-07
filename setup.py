@@ -8,7 +8,7 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 VERSION = bronto.__version__
 github_url = 'http://github.com/Scotts-Marketplace/bronto-python/'
-requires = ['suds', ]
+requires = ['suds-jurko', 'six']
 
 setup(name='bronto-python',
       version=VERSION,
@@ -20,7 +20,7 @@ setup(name='bronto-python',
       packages=find_packages(),
       include_package_data=True,
       install_requires=requires,
-      tests_require=requires,
+      tests_require=requires + ['mock'],
       description='A python wrapper around Bronto\'s SOAP API',
       long_description=open('README.rst').read(),
       keywords=['bronto', 'soap', 'marketing'],
@@ -32,5 +32,10 @@ setup(name='bronto-python',
            'Natural Language :: English',
            'Operating System :: OS Independent',
            'Programming Language :: Python',
+           'Programming Language :: Python :: 2.7',
+           'Programming Language :: Python :: 3',
+           'Programming Language :: Python :: 3.2',
+           'Programming Language :: Python :: 3.3',
+           'Programming Language :: Python :: 3.4',
       ]
 )
